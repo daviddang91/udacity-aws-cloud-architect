@@ -1,0 +1,38 @@
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| udacity            |
++--------------------+
+5 rows in set (0.00 sec)
+
+mysql> use udacity
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> show tables;
++-------------------+
+| Tables_in_udacity |
++-------------------+
+| profile           |
++-------------------+
+1 row in set (0.01 sec)
+
+mysql> select * from profile;
++--------------+------+------------------+
+| name         | age  | address          |
++--------------+------+------------------+
+| David Dang   |   31 | Ha Noi, Viet Nam |
+| Julia Nguyen |   30 | Ha Noi, Viet Nam |
+| Tom Nguyen   |   27 | Ha Noi, Viet Nam |
++--------------+------+------------------+
+3 rows in set (0.00 sec)
+
+mysql> insert into profile (name, age, address) values('Nicky Nguyen', 27, 'Ha Noi, Viet Nam');;
+ERROR 1290 (HY000): The MySQL server is running with the --read-only option so it cannot execute this statement
+mysql> 

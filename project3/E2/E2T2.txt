@@ -1,0 +1,6 @@
+- Should use AWS system manager to manage EC2 instances
+- S3 bucket logging not enabled
+- S3 server side encryption not enabled
+- ELB logging not enabled
+- http to https redirection not enabled in ELB
+- VPC default SG should be closed

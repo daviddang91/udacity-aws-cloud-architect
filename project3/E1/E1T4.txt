@@ -1,0 +1,10 @@
+# Poor practice 1
+WebAppSG: Inbound rules are too open
+  - It should allow requests coming from the ALB only.
+  - It should use AWS system manager instead of allow direct SSH to the web app server.
+
+
+# Poor practice 2
+Policy associated with c3-app-InstanceRole violates Least Privilege Access
+  - It allows full access to all S3 buckets.
+  - It should allow access to only the S3 bucket: cand-c3-free-recipes-****

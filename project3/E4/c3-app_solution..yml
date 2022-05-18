@@ -1,0 +1,519 @@
+{
+    "Description": "This template deploys ec2 instances for the project starter",
+    "Parameters": {
+        "AmiIdRecipeWebServiceInstance": {
+            "Type": "String",
+            "Default": "ami-0964e67a489e13cdb"
+        },
+        "AmiIdAttackInstance": {
+            "Type": "String",
+            "Default": "ami-01fcf79ce78f46764"
+        },
+        "KeyPair": {
+            "Type": "String",
+            "Description": "Name of an existing KeyPair you will use to access the EC2 instances in this exercise. Be sure you have access to the private key file corresponding to this keypair."
+        }
+    },
+    "Resources": {
+        "InstanceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "InstanceRolePolicy-C3",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "s3:*",
+                                    "Resource": [
+                                        "arn:aws:s3:::cand-c3-free-recipes-486091873179",
+                                        "arn:aws:s3:::cand-c3-free-recipes-486091873179/*"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "436c1666-79a8-443d-b6c7-0147ca43463c"
+                }
+            }
+        },
+        "InstanceProfileRole": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "InstanceRole"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "07ddb6e0-4702-46cd-b255-c53e2046c8e5"
+                }
+            }
+        },
+        "WebAppSG": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": "WebAppSG",
+                "GroupDescription": "Security group for this application server",
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 5000,
+                        "ToPort": 5000,
+                        "CidrIp": "10.192.0.0/16"
+                    }
+                ],
+                "VpcId": {
+                    "Fn::ImportValue": "VpcId"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "42c41fdb-37c8-4dd2-8914-683082661792"
+                }
+            }
+        },
+        "RecipeWebServiceInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": {
+                    "Ref": "AmiIdRecipeWebServiceInstance"
+                },
+                "InstanceType": "t3.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "WebAppSG",
+                            "GroupId"
+                        ]
+                    }
+                ],
+                "SubnetId": {
+                    "Fn::ImportValue": "PublicSubnetTrusted"
+                },
+                "IamInstanceProfile": {
+                    "Ref": "InstanceProfileRole"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Web Service Instance - C3"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Sub": [
+                            "#!/bin/bash\necho \"Environment=S3_FREE_RECIPES=\"${S3FreeRecipies} | sudo tee -a /lib/systemd/system/flask.service\necho \"Environment=S3_SECRET_RECIPES=\"${S3SecretRecipies} | sudo tee -a /lib/systemd/system/flask.service\nsystemctl daemon-reload\nsleep 30\nservice flask restart\n",
+                            {
+                                "S3FreeRecipies": {
+                                    "Fn::ImportValue": "BucketNameRecipesFree"
+                                },
+                                "S3SecretRecipies": {
+                                    "Fn::ImportValue": "BucketNameRecipesSecret"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "7a189270-a0cf-4d2d-93a9-2b5a7dea3b95"
+                }
+            }
+        },
+        "AppLoadBalancerSG": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": "AppLoadBalancerSG",
+                "GroupDescription": "Security group for this application server",
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "VpcId": {
+                    "Fn::ImportValue": "VpcId"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "085132d9-88e8-4bed-b739-379183ee120a"
+                }
+            }
+        },
+        "AppEIP": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "InstanceId": {
+                    "Ref": "RecipeWebServiceInstance"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "0e3afaa3-2dc5-4d50-9029-9ab710ca42ff"
+                }
+            }
+        },
+        "AppLoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties": {
+                "Name": "c1-web-service-alb",
+                "SecurityGroups": [
+                    {
+                        "Fn::GetAtt": [
+                            "AppLoadBalancerSG",
+                            "GroupId"
+                        ]
+                    }
+                ],
+                "Subnets": [
+                    {
+                        "Fn::ImportValue": "PublicSubnetTrusted"
+                    },
+                    {
+                        "Fn::ImportValue": "PublicSubnetUnTrusted"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "f2ca51f5-e24d-41f7-b6a3-2a54d11ddff2"
+                }
+            }
+        },
+        "AppLoadBalancerListener": {
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties": {
+                "DefaultActions": [
+                    {
+                        "Type": "forward",
+                        "TargetGroupArn": {
+                            "Ref": "AppTargetGroup"
+                        }
+                    }
+                ],
+                "LoadBalancerArn": {
+                    "Ref": "AppLoadBalancer"
+                },
+                "Port": 80,
+                "Protocol": "HTTP"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "01ee838f-e214-4782-adcc-773bb000b1df"
+                }
+            }
+        },
+        "AppTargetGroup": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+                "HealthCheckEnabled": true,
+                "HealthCheckIntervalSeconds": 10,
+                "HealthCheckPath": "/health",
+                "Name": "AppTargetGroup",
+                "Port": 5000,
+                "VpcId": {
+                    "Fn::ImportValue": "VpcId"
+                },
+                "Protocol": "HTTP",
+                "Targets": [
+                    {
+                        "Id": {
+                            "Ref": "RecipeWebServiceInstance"
+                        }
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "7961ae11-4546-42b1-86b1-86b650dfdd7c"
+                }
+            }
+        },
+        "AttackInstanceSG": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": "AttackInstanceSG",
+                "GroupDescription": "Security group for the attack instance",
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ],
+                "VpcId": {
+                    "Fn::ImportValue": "VpcId"
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "4e34372b-01fd-4a99-957e-0b3dd323b46c"
+                }
+            }
+        },
+        "AttackInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": {
+                    "Ref": "AmiIdAttackInstance"
+                },
+                "InstanceType": "t3.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "IamInstanceProfile": {
+                    "Ref": "InstanceProfileRole"
+                },
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "AttackInstanceSG",
+                            "GroupId"
+                        ]
+                    }
+                ],
+                "SubnetId": {
+                    "Fn::ImportValue": "PublicSubnetUnTrusted"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Attack Instance - C3"
+                    }
+                ]
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "ca45a47a-b7ae-4af6-9f21-e0b1adc15eb0"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "AttackInstanceIP": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "AttackInstance",
+                    "PublicDnsName"
+                ]
+            }
+        },
+        "ApplicationInstanceIP": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "RecipeWebServiceInstance",
+                    "PublicDnsName"
+                ]
+            }
+        },
+        "ApplicationURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "AppLoadBalancer",
+                    "DNSName"
+                ]
+            }
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "4e34372b-01fd-4a99-957e-0b3dd323b46c": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "085132d9-88e8-4bed-b739-379183ee120a": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "f2ca51f5-e24d-41f7-b6a3-2a54d11ddff2": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "085132d9-88e8-4bed-b739-379183ee120a"
+                ]
+            },
+            "42c41fdb-37c8-4dd2-8914-683082661792": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "436c1666-79a8-443d-b6c7-0147ca43463c": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "07ddb6e0-4702-46cd-b255-c53e2046c8e5": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "ca45a47a-b7ae-4af6-9f21-e0b1adc15eb0": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "4e34372b-01fd-4a99-957e-0b3dd323b46c"
+                ]
+            },
+            "7a189270-a0cf-4d2d-93a9-2b5a7dea3b95": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "42c41fdb-37c8-4dd2-8914-683082661792"
+                ]
+            },
+            "7961ae11-4546-42b1-86b1-86b650dfdd7c": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 300,
+                    "y": 330
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "01ee838f-e214-4782-adcc-773bb000b1df": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 420,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "0e3afaa3-2dc5-4d50-9029-9ab710ca42ff": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 420,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": [],
+                "isassociatedwith": [
+                    "7a189270-a0cf-4d2d-93a9-2b5a7dea3b95"
+                ]
+            }
+        }
+    }
+}

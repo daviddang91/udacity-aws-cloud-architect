@@ -1,0 +1,149 @@
+{
+    "Description": "This template deploys an S3 bucket for storage of recipes.",
+    "Resources": {
+        "S3BucketRecipesFree": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "cand-c3-free-recipes",
+                            {
+                                "Ref": "AWS::AccountId"
+                            }
+                        ]
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "b4c4a582-f7a6-46b1-88a1-36ca2e521b4c"
+                }
+            }
+        },
+        "S3BucketRecipesSecret": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "cand-c3-secret-recipes",
+                            {
+                                "Ref": "AWS::AccountId"
+                            }
+                        ]
+                    ]
+                },
+                "BucketEncryption": {
+                  "ServerSideEncryptionConfiguration": [
+                    {
+                      "ServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      }
+                    }
+                  ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "223d380f-834d-46a8-a7ae-ed41fb507893"
+                }
+            }
+        },
+        "S3BucketVPCFlowLogs": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            "cand-c3-vpc-flow-logs",
+                            {
+                                "Ref": "AWS::AccountId"
+                            }
+                        ]
+                    ]
+                }
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d73004b8-ef3e-42a7-8e28-c8169b4141a3"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "BucketNameRecipesFree": {
+            "Value": {
+                "Ref": "S3BucketRecipesFree"
+            },
+            "Description": "Name of the Amazon S3 bucket that you will upload free recipes to.",
+            "Export": {
+                "Name": "BucketNameRecipesFree"
+            }
+        },
+        "BucketNameRecipesSecret": {
+            "Value": {
+                "Ref": "S3BucketRecipesSecret"
+            },
+            "Description": "Name of the Amazon S3 bucket that you will upload secret recipes to.",
+            "Export": {
+                "Name": "BucketNameRecipesSecret"
+            }
+        },
+        "BucketArnVPCFlowLogs": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "S3BucketVPCFlowLogs",
+                    "Arn"
+                ]
+            },
+            "Description": "Arn of the Amazon S3 bucket that have vpc flow logs for this project",
+            "Export": {
+                "Name": "BucketArnVPCFlowLogs"
+            }
+        }
+    },
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "d73004b8-ef3e-42a7-8e28-c8169b4141a3": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "223d380f-834d-46a8-a7ae-ed41fb507893": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 180,
+                    "y": 90
+                },
+                "z": 1,
+                "embeds": []
+            },
+            "b4c4a582-f7a6-46b1-88a1-36ca2e521b4c": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 60,
+                    "y": 210
+                },
+                "z": 1,
+                "embeds": []
+            }
+        }
+    }
+}

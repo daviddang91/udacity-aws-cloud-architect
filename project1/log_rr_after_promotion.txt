@@ -1,0 +1,26 @@
+mysql> insert into profile (name, age, address) values('Nicky Nguyen', 27, 'Ha Noi, Viet Nam');
+ERROR 1290 (HY000): The MySQL server is running with the --read-only option so it cannot execute this statement
+
+mysql> insert into profile (name, age, address) values('Nicky Nguyen', 27, 'Ha Noi, Viet Nam');
+ERROR 2013 (HY000): Lost connection to MySQL server during query
+No connection. Trying to reconnect...
+Enter password: 
+Connection id:    9
+Current database: udacity
+
+Query OK, 1 row affected (8.18 sec)
+
+mysql> insert into profile (name, age, address) values('Nicky Nguyen', 27, 'Ha Noi, Viet Nam');
+Query OK, 1 row affected (0.02 sec)
+
+mysql> select * from profile;
++--------------+------+------------------+
+| name         | age  | address          |
++--------------+------+------------------+
+| David Dang   |   31 | Ha Noi, Viet Nam |
+| Julia Nguyen |   30 | Ha Noi, Viet Nam |
+| Tom Nguyen   |   27 | Ha Noi, Viet Nam |
+| Nicky Nguyen |   27 | Ha Noi, Viet Nam |
+| Nicky Nguyen |   27 | Ha Noi, Viet Nam |
++--------------+------+------------------+
+5 rows in set (0.00 sec)

@@ -1,0 +1,8 @@
+1. To prevent SSH brute force attack
+  - Disable SSH login via password for the web service instance
+  - Update the WebAppSG to allow requests only from the load balancer
+  - Use AWS system manager instead of ssh directly
+  - Move the web service instance into the private subnet
+
+
+2. Enable server side encryption for S3 buckets with a KMS key and assign to privileged business users only.
